@@ -1,0 +1,23 @@
+services:
+  bili-auto:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: bili-auto:latest
+    container_name: bili-auto
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      RUN_AT: "${RUN_AT:-09:10}"
+      RUN_NOW: "${RUN_NOW:-1}"
+      BILI_COOKIE: "${BILI_COOKIE:-}"
+      BILI_NOTIFY_TYPE: "${BILI_NOTIFY_TYPE:-none}"
+      BILI_NOTIFY_KEY: "${BILI_NOTIFY_KEY:-}"
+      BILI_COIN_NUM: "${BILI_COIN_NUM:-1}"
+    volumes:
+      - ../config.json:/app/config.json:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
