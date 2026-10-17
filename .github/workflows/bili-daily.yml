@@ -1,0 +1,47 @@
+name: bili-daily
+
+on:
+  schedule:
+    # UTC 01:07 = 北京时间 09:07。GitHub 的 cron 用 UTC，且可能有几分钟延迟
+    - cron: "7 1 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: bili-daily
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 校验 WBI 签名算法
+        run: python run.py selftest
+
+      - name: 执行每日任务
+        env:
+          # Cookie 只存在 Secrets 里，config.ci.json 中的 cookie 字段留空
+          BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
+          BILI_NOTIFY_TYPE: ${{ secrets.BILI_NOTIFY_TYPE }}
+          BILI_NOTIFY_KEY: ${{ secrets.BILI_NOTIFY_KEY }}
+        # 用仓库里提交的 config.ci.json（不含敏感信息），想改任务开关直接改这个文件
+        run: python run.py daily --config config.ci.json
+
+      - name: 写入运行摘要
+        if: always()
+        run: |
+          echo "### B站每日任务" >> $GITHUB_STEP_SUMMARY
+          echo "- 触发时间(UTC): $(date -u '+%F %T')" >> $GITHUB_STEP_SUMMARY
+          echo "- 配置文件: config.ci.json" >> $GITHUB_STEP_SUMMARY
