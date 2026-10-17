@@ -29,6 +29,19 @@ DEFAULT_UA = (
 # 服务端明确表示"请求被拦截 / 签名错误"的 code，遇到就刷新 WBI key 重试
 WBI_ERROR_CODES = {-403, -352, -401, 352}
 
+# 这些 code 是明确的业务结果（重复操作、未登录、超限……），
+# 重试一百次也是同样的答案，只会白白拖慢流程。
+NO_RETRY_CODES = {
+    -101,   # 账号未登录
+    -111,   # csrf 校验失败
+    -400,   # 请求错误
+    -404,   # 资源不存在（海外 IP 常见）
+    34005,  # 今日投币已达上限
+    65004,  # 已经点过赞了
+    65006,  # 重复点赞
+    71000,  # 重复分享
+}
+
 
 class ApiError(Exception):
     """B站业务错误（HTTP 200 但 code != 0）。"""
@@ -176,8 +189,8 @@ class BiliClient:
                 self._wbi_signer.refresh()
                 continue
 
-            # 账号级问题，重试没有意义
-            if attempt >= self.attempts:
+            # 账号级 / 业务级问题，重试没有意义，直接抛给上层判定
+            if code in NO_RETRY_CODES or attempt >= self.attempts:
                 raise ApiError(code, payload.get("message") or payload.get("msg") or "", full, payload)
 
             wait = self.backoff * attempt
