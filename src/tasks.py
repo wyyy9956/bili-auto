@@ -35,24 +35,46 @@ ALREADY_DONE = {
 }
 
 
+# 海外 IP（GitHub Actions 的美国机房等）请求热门榜、视频详情会被地区限制挡掉，
+# 返回 -404「啥都木有」。这里内置一个长期存在的官方视频作为兜底，
+# 保证观看 / 分享 / 点赞始终有对象可用，不至于整个流程直接失败。
+FALLBACK_VIDEO = {
+    "aid": 80433022,
+    "bvid": "BV1GJ411x7h7",
+    "cid": 137649199,
+    "title": "【官方 MV】Never Gonna Give You Up - Rick Astley",
+    "duration": 213,
+}
+
+
 def _pick_video(client: BiliClient) -> Dict[str, Any]:
-    """从热门榜取第一个视频，作为今天要"看/赞/币/分享"的对象。"""
-    payload = client.get(
-        f"{API}/x/web-interface/popular",
-        params={"ps": 1, "pn": 1},
-        referer="https://www.bilibili.com/v/popular/all",
-    )
-    items = (payload.get("data") or {}).get("list") or []
-    if not items:
-        raise ApiError(-1, "热门接口没有返回视频", "popular")
-    video = items[0]
-    return {
-        "aid": video.get("aid"),
-        "bvid": video.get("bvid"),
-        "cid": video.get("cid"),
-        "title": video.get("title", ""),
-        "duration": video.get("duration", 0),
-    }
+    """从热门榜取第一个视频，作为今天要"看/赞/币/分享"的对象。
+
+    取不到（网络异常、海外 IP 被地区限制、热门榜为空）时退回内置视频。
+    """
+    try:
+        payload = client.get(
+            f"{API}/x/web-interface/popular",
+            params={"ps": 1, "pn": 1},
+            referer="https://www.bilibili.com/v/popular/all",
+        )
+        items = (payload.get("data") or {}).get("list") or []
+    except ApiError:
+        items = []
+
+    if items:
+        video = items[0]
+        # 热门榜里可能混进番剧/专栏，没有 cid 就没法做观看任务
+        if video.get("cid") and video.get("aid"):
+            return {
+                "aid": video.get("aid"),
+                "bvid": video.get("bvid"),
+                "cid": video.get("cid"),
+                "title": video.get("title", ""),
+                "duration": video.get("duration", 0),
+            }
+
+    return dict(FALLBACK_VIDEO)
 
 
 # ---------------------------------------------------------------- 具体任务

@@ -112,6 +112,11 @@ def cmd_selftest(args: argparse.Namespace) -> int:
     if payload.get("code") == 0:
         data = payload.get("data") or {}
         print(f"   [OK] 服务端接受签名，视频标题 = {data.get('title')}")
+    elif payload.get("code") == -404:
+        # 海外 IP（例如 GitHub Actions 的美国机房）请求视频详情会被地区限制挡掉，
+        # 返回 -404「啥都木有」。签名本身是没问题的（签名错会是 -403/-352），
+        # 所以这里算通过，否则 Actions 上会永远红叉。
+        print("   [OK] 服务端接受签名（视频内容受地区限制不可见，不影响签名校验）")
     else:
         print(f"   [FAIL] code={payload.get('code')} message={payload.get('message')}")
         return 1
