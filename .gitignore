@@ -1,0 +1,25 @@
+# 包含 Cookie 的配置：绝对不要提交
+config.json
+config.local.json
+cookies.json
+
+# 抓包文件
+*.har
+*.pcap
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# 运行产物
+run.log
+*.log
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
