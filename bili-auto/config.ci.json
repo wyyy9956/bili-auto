@@ -1,0 +1,25 @@
+{
+  "_comment": "提交到仓库用这份配置。cookie 留空，由 GitHub Secrets 里的 BILI_COOKIE 注入。想改任务开关就改这里。",
+  "cookie": "",
+  "timeout": 15,
+  "min_interval": 1.0,
+  "retry": {
+    "attempts": 3,
+    "backoff": 2.0
+  },
+  "user_agent": "",
+  "daily": {
+    "check_login": true,
+    "watch_video": true,
+    "share_video": true,
+    "like": true,
+    "coin": false,
+    "coin_num": 1,
+    "claim_reward": true,
+    "live_sign": true
+  },
+  "notify": {
+    "type": "none",
+    "key": ""
+  }
+}
